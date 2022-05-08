@@ -19,7 +19,9 @@ scheme --script tests.ss
 - `{"x":5,"y":7}` are parsed as `(vector 'json-object '(("x" . 5) ("y" . 7)))`
 - incorrect JSON will be simply be represented by `#f`
 
-`get-json`, `string->json` and `bytevector->json` returns a scheme structure that preserves information of the original JSON structure. `get-json` takes a binary input port and will read until it reaches the eof object.
+`get-json`, `string->json` and `bytevector->json` returns a scheme structure that preserves information of the original JSON structure.
+
+`get-json` takes a binary input port and will read until it reaches the eof object. _I don't know if this is good design because it might not provide any value and it might actually be more valuable to let it gradually pick out multiple JSON values. For example if continually listening on a message queue._
 
 ```scheme
 (string->json "123") ; 123
