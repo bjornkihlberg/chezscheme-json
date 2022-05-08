@@ -2,6 +2,7 @@
   (export bytevector->json
           get-json
           json->scheme
+          json->string
           json-array-data
           json-array?
           json-empty?
@@ -168,4 +169,50 @@
       [(json-array? x) (map json->scheme (json-array-data x))]
       [(json-object? x)
        (map json-key-value-pair->scheme (json-object-data x))]
-      [else (error 'json->scheme "Invalid JSON structure")])))
+      [else (error 'json->scheme "Invalid JSON structure")]))
+  (define (json-number->string n)
+    (and (number? n) (number->string n)))
+  (define (json-string->string x)
+    (and (string? x) (format #f "~s" x)))
+  (define (json-null->string x) (and (json-null? x) "null"))
+  (define (json-true->string x) (and (json-true? x) "true"))
+  (define (json-false->string x)
+    (and (json-false? x) "false"))
+  (define (json-empty->string x) (and (json-empty? x) ""))
+  (define (json-array->string x)
+    (and (json-array? x)
+         (let ([x (json-array-data x)])
+           (if (null? x)
+               "[]"
+               (apply
+                 string-append
+                 `("[" ,(json->string (car x))
+                       ,@(map (lambda (x)
+                                (string-append "," (json->string x)))
+                              (cdr x))
+                       "]"))))))
+  (define (json-key/value->string x)
+    (string-append "\"" (car x) "\":" (json->string (cdr x))))
+  (define (json-object->string x)
+    (and (json-object? x)
+         (let ([x (json-object-data x)])
+           (if (null? x)
+               "{}"
+               (apply
+                 string-append
+                 `("{" ,(json-key/value->string (car x))
+                       ,@(map (lambda (x)
+                                (string-append
+                                  ","
+                                  (json-key/value->string x)))
+                              (cdr x))
+                       "}"))))))
+  (define (json->string x)
+    (or (json-number->string x)
+        (json-string->string x)
+        (json-null->string x)
+        (json-true->string x)
+        (json-false->string x)
+        (json-empty->string x)
+        (json-array->string x)
+        (json-object->string x))))
