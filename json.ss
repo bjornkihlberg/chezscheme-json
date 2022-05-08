@@ -144,11 +144,7 @@
         (parse-true bip)
         (parse-array bip)
         (parse-object bip)))
-  (define (get-json bip)
-    (let ([result (parse-json-term bip)])
-      (and result
-           (begin (parse-padding* bip) (parse-empty bip))
-           result)))
+  (define get-json parse-json-term)
   (define (bytevector->json bv)
     (call-with-port (open-bytevector-input-port bv) get-json))
   (define (string->json s)

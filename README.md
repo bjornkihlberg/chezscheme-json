@@ -21,7 +21,7 @@ scheme --script tests.ss
 
 `get-json`, `string->json` and `bytevector->json` returns a scheme structure that preserves information of the original JSON structure.
 
-`get-json` takes a binary input port and will read until it reaches the eof object. _I don't know if this is good design because it might not provide any value and it might actually be more valuable to let it gradually pick out multiple JSON values. For example if continually listening on a message queue._
+`get-json` takes a binary input port and will read until it reaches the end of a complete json value.
 
 ```scheme
 (string->json "123") ; 123
