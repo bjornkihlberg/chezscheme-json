@@ -3,6 +3,7 @@
           get-json
           json-array-data
           json-array?
+          json-empty?
           json-false?
           json-null?
           json-object-data
@@ -14,6 +15,7 @@
   (import (chezscheme))
   (define-structure (json-object data))
   (define-structure (json-array data))
+  (define (json-empty? x) (eq? x 'json-empty))
   (define (json-null? x) (eq? x 'json-null))
   (define (json-true? x) (eq? x 'json-true))
   (define (json-false? x) (eq? x 'json-false))
