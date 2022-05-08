@@ -12,9 +12,9 @@ scheme --script tests.ss
 
 ## Quickstart
 
-- `null` are parsed as symbol `'json-null`
-- `true` are parsed as symbol `'json-true`
-- `false` are parsed as symbol `'json-false`
+- `null` are parsed as `'json-null`
+- `true` are parsed as `'json-true`
+- `false` are parsed as `'json-false`
 - `[1, 2, 3]` are parsed as `(vector 'json-array (list 1 2 3))`
 - `{"x":5,"y":7}` are parsed as `(vector 'json-object '(("x" . 5) ("y" . 7)))`
 - incorrect JSON will be simply be represented by `#f`
