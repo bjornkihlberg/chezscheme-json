@@ -38,3 +38,11 @@ scheme --script tests.ss
     (open-file-input-port "./myjson.json")
     get-json) ; (vector 'json-array '("huey" "dewey" "louie"))
 ```
+
+`json->scheme` can be used to strip a parsed datastructure from JSON specific information.
+
+- `'json-null` is translated to `'()`
+- `'json-true` is translated to `#t`
+- `'json-false` is translated to `#f`
+- `(vector 'json-array (list 1 2 3))` is translated to `(list 1 2 3)`
+- `(vector 'json-object '(("x" . 5) ("y" . 7)))` is translated to `'((x . 5) (y . 7)))`

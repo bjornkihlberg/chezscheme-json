@@ -1,6 +1,7 @@
 (library (json)
   (export bytevector->json
           get-json
+          json->scheme
           json-array-data
           json-array?
           json-empty?
@@ -152,4 +153,19 @@
   (define (string->json s)
     (call-with-port
       (open-bytevector-input-port (string->utf8 s))
-      get-json)))
+      get-json))
+  (define (json-key-value-pair->scheme key/value)
+    (let ([key (car key/value)] [value (cdr key/value)])
+      `(,(string->symbol key) . ,(json->scheme value))))
+  (define (json->scheme x)
+    (cond
+      [(number? x) x]
+      [(string? x) x]
+      [(json-empty? x) '()]
+      [(json-null? x) '()]
+      [(json-true? x) #t]
+      [(json-false? x) #f]
+      [(json-array? x) (map json->scheme (json-array-data x))]
+      [(json-object? x)
+       (map json-key-value-pair->scheme (json-object-data x))]
+      [else (error 'json->scheme "Invalid JSON structure")])))
