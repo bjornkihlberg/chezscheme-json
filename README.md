@@ -48,3 +48,7 @@ scheme --script tests.ss
 - `'json-false` is translated to `#f`
 - `(vector 'json-array (list 1 2 3))` is translated to `(list 1 2 3)`
 - `(vector 'json-object '(("x" . 5) ("y" . 7)))` is translated to `'((x . 5) (y . 7)))`
+
+## Notes
+
+I suspect the code could be cleaned up but I'm tempted to let it be and come back in a few years to see what I've learned since. I'm working on a better code formatter for Chez Scheme as well which I will apply here as soon as it's ready.
