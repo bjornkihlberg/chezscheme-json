@@ -19,6 +19,11 @@
 (define-syntax |char e| (identifier-syntax 101))
 (define-syntax |char t| (identifier-syntax 116))
 (define-syntax |char r| (identifier-syntax 114))
+(define-syntax |char ,| (identifier-syntax 44))
+(define-syntax |char :| (identifier-syntax 58))
+(define-syntax |char newline| (identifier-syntax 10))
+(define-syntax |char return| (identifier-syntax 13))
+(define-syntax |char space| (identifier-syntax 32))
 
 (define (parse-null bip)
   (and (eq? |char n| (lookahead-u8 bip))
@@ -46,38 +51,45 @@
        'json-true))
 
 (define (parse-comma bip)
-  (and (eq? 44 (lookahead-u8 bip))
-       (eq? 44 (get-u8 bip))))
+  (and (eq? |char ,| (lookahead-u8 bip))
+       (get-u8 bip)
+       #t))
 
 (define (parse-array-start bip)
   (and (eq? 91 (lookahead-u8 bip))
-       (eq? 91 (get-u8 bip))))
+       (get-u8 bip)
+       #t))
 
 (define (parse-array-end bip)
   (and (eq? 93 (lookahead-u8 bip))
-       (eq? 93 (get-u8 bip))))
+       (get-u8 bip)
+       #t))
 
 (define (parse-object-start bip)
   (and (eq? 123 (lookahead-u8 bip))
-       (eq? 123 (get-u8 bip))))
+       (get-u8 bip)
+       #t))
 
 (define (parse-object-end bip)
   (and (eq? 125 (lookahead-u8 bip))
-       (eq? 125 (get-u8 bip))))
+       (get-u8 bip)
+       #t))
 
 (define (parse-colon bip)
-  (and (eq? 58 (lookahead-u8 bip))
-       (eq? 58 (get-u8 bip))))
-
-(define (parse-padding bip)
-  (case (lookahead-u8 bip)
-    [(10 13 32) (get-u8 bip) #t]
-    [else #f]))
+  (and (eq? |char :| (lookahead-u8 bip))
+       (get-u8 bip)
+       #t))
 
 (define (parse-padding* bip)
-  (let loop ()
-    (and (parse-padding bip)
-         (loop))))
+  (define (parse-padding bip)
+    (let ([c (lookahead-u8 bip)])
+      (and (or (eq? c |char newline|)
+               (eq? c |char return|)
+               (eq? c |char space|))
+           (get-u8 bip)
+           #t)))
+
+  (let loop () (and (parse-padding bip) (loop))))
 
 (define (parse-string bip)
   (and (eq? 34 (lookahead-u8 bip))
