@@ -19,13 +19,13 @@
   "parsing numbers"
   (assert-equal (string->json "123e5") 12300000.0)
   (assert-equal (string->json "  123e5 ") 12300000.0)
-  (assert-equal (string->json "  1 23e5 ") #f))
+  (assert-equal (string->json "  1 23e5 ") 1))
 
 (describe
   "parsing strings"
   (assert-equal (string->json "\"123e\\n5\"") "123e\\n5")
   (assert-equal (string->json "  \"123e\\\"5\" ") "123e\\\"5")
-  (assert-equal (string->json "  \"knatte\" 23e5 ") #f))
+  (assert-equal (string->json "  \"knatte\" 23e5 ") "knatte"))
 
 (describe "parsing lists"
   (assert-equal (string->json "[]") (make-json-array (list)))
@@ -43,7 +43,7 @@
         2
         (make-json-array '())
         (make-json-array '("hello")))))
-  (assert-equal (string->json "[1,2,[], [\"hello\"]]  7") #f)
+  (assert-equal (string->json "[1,2,[], [\"hello\"]]  7") (make-json-array `(1 2 ,(make-json-array '()) ,(make-json-array '("hello")))))
   (assert-equal
     (string->json "  [   1 ,2 [], [\"hello\"]]  ")
     #f)
@@ -61,7 +61,7 @@
     (make-json-object (list (cons "hey" 5))))
   (assert-equal
     (string->json "     {\"hey\" :   5}   \n\n 5\n")
-    #f)
+    (make-json-object '(("hey" . 5))))
   (assert-equal
     (string->json "{\"hey\":{}}")
     (make-json-object
