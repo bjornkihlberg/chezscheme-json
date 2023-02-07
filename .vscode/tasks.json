@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "Run test suite",
-      "command": "scheme --script ./tests.scm",
+      "command": "scheme --script ./json.spec.scm",
       "type": "shell",
       "problemMatcher": [],
       "presentation": {
