@@ -24,11 +24,12 @@
     (lambda (bip)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
-(let ([json-document "5"])
+(let ([json-document "5 false"])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with = (json:get-json bip) 5)
+      (assert-with symbol=? (json:get-json bip) 'json-false)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "123e5"])
@@ -49,11 +50,12 @@
       (assert-with = (json:get-json bip) 2300000.0)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
-(let ([json-document "\"123e\\n5\""])
+(let ([json-document "\"123e\\n5\" true"])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with string=? (json:get-json bip) "123e\\n5")
+      (assert-with symbol=? (json:get-json bip) 'json-true)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "  \"123e\\\"5\" "])
