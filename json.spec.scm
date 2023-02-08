@@ -207,4 +207,7 @@
 (assert-with eq? (json:match 5)
                  (void))
 
+(assert-with equal? (expand '(json:match 5))
+                    '(#2%void))
+
 (display "All tests passed!\n")
