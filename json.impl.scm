@@ -272,3 +272,13 @@
           (json-true? x)
           (json-false? x)
           (json-null? x))]))
+
+(define-syntax (match code)
+  (let* ([codes (syntax->list code)]
+         [macro-name (syntax->datum (car codes))]
+         [macro-args (cdr codes)])
+    
+    (when (null? macro-args)
+          (syntax-violation macro-name "Too few arguments, missing value" code))
+
+    #'(void)))
