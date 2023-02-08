@@ -1,6 +1,5 @@
 (library (json)
-  (export bytevector->json
-          get-json
+  (export get-json
           json->scheme
           json->string
           json-array-data
@@ -13,8 +12,7 @@
           json-true?
           json?
           make-json-array
-          make-json-object
-          string->json)
+          make-json-object)
 
   (import (chezscheme))
 

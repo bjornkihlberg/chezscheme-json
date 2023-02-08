@@ -179,12 +179,6 @@
 
 (define get-json parse-json-term)
 
-(define (bytevector->json bv)
-  (call-with-port (open-bytevector-input-port bv) get-json))
-
-(define (string->json s)
-  (call-with-port (open-bytevector-input-port (string->utf8 s)) get-json))
-
 (define (json-key-value-pair->scheme key/value)
   (let ([key (car key/value)] [value (cdr key/value)])
     `(,(string->symbol key) . ,(json->scheme value))))

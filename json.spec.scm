@@ -18,6 +18,24 @@
 
 (display "Running tests...\n")
 
+(let ()
+  (import (json))
+  (assert-with equal? (library-exports '(json))
+    '(make-json-object
+      make-json-array
+      json?
+      json-true?
+      json-object?
+      json-object-data
+      json-null?
+      json-false?
+      json-empty?
+      json-array?
+      json-array-data
+      json->string
+      json->scheme
+      get-json)))
+
 (let ([json-document ""])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
