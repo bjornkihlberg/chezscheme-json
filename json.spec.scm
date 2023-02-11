@@ -1,4 +1,4 @@
-(module json (get-json match)
+(module json (get-json)
   (include "json.impl.scm"))
 
 (import (prefix json json:))
@@ -21,8 +21,7 @@
 (let ()
   (import (json))
   (assert-with equal? (library-exports '(json))
-    '(match
-      make-json-object
+    '(make-json-object
       make-json-array
       json?
       json-true?
@@ -197,17 +196,5 @@
                           '#(json-object (("hey" . #(json-object (("x" . #(json-array (1 json-null 3))))))
                                           ("yo" . #(json-object ())))))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
-
-(guard (e [else (assert (assertion-violation? e))
-                (assert (syntax-violation? e))
-                (assert-with symbol=? (condition-who e) 'json:match)
-                (assert-with string=? (condition-message e) "Too few arguments, missing value")])
-  (eval '(json:match)))
-
-(assert-with eq? (json:match 5)
-                 (void))
-
-(assert-with equal? (expand '(json:match 5))
-                    '(#2%void))
 
 (display "All tests passed!\n")

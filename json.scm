@@ -12,8 +12,7 @@
           json-true?
           json?
           make-json-array
-          make-json-object
-          match)
+          make-json-object)
 
   (import (chezscheme))
 
