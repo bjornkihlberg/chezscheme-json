@@ -21,10 +21,8 @@
 (let ()
   (import (json))
   (assert-with equal? (library-exports '(json))
-    '(make-json-object
-      json-true?
+    '(json-true?
       json-object?
-      json-object-data
       json-null?
       json-false?
       json-empty?
@@ -143,7 +141,7 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object ()))
+                          '#(json-object))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "{\"hey\": 5}"])
@@ -151,7 +149,7 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("hey" . 5))))
+                          '#(json-object ("hey" . 5)))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "     {\"hey\" :   5}   \n\n \n"])
@@ -159,7 +157,7 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("hey" . 5))))
+                          '#(json-object ("hey" . 5)))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "     {\"hey\" :   5}   \n\n 5\n"])
@@ -167,7 +165,7 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("hey" . 5))))
+                          '#(json-object ("hey" . 5)))
       (assert-with = (json:get-json bip) 5)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
@@ -176,7 +174,7 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("hey" . #(json-object ())))))
+                          '#(json-object ("hey" . #(json-object))))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document "{\"hey\":{}{}}"])
@@ -189,8 +187,8 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("yo" . #(json-object ()))
-                                          ("hey" . #(json-object (("x" . #(json-array 1 json-null 3))))))))
+                          '#(json-object ("hey" . #(json-object ("x" . #(json-array 1 json-null 3))))
+                                         ("yo" . #(json-object))))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document (json:json->string '#(json-array))])

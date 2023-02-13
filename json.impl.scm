@@ -1,8 +1,12 @@
-(define-structure (json-object data))
 (define (json-array? x)
   (and (vector? x)
        (positive? (vector-length x))
        (eq? (vector-ref x 0) 'json-array)))
+
+(define (json-object? x)
+  (and (vector? x)
+       (positive? (vector-length x))
+       (eq? (vector-ref x 0) 'json-object)))
 
 (define (json-empty? x) (eq? x 'json-empty))
 (define (json-null? x) (eq? x 'json-null))
@@ -134,7 +138,7 @@
     (do ([i (sub1 (vector-length v)) (sub1 i)]
          [items items (cdr items)])
         ((zero? i) v)
-        (vector-set! v i (car items))))
+      (vector-set! v i (car items))))
 
   (let ([result (and (parse-array-start bip)
                      (let ([x (parse-json-term bip)])
@@ -160,6 +164,14 @@
              (cons key value)))))))
 
 (define (parse-object bip)
+  (define (make-json-object items)
+    (define v (make-vector (add1 (length items))))
+    (vector-set! v 0 'json-object)
+    (do ([i (sub1 (vector-length v)) (sub1 i)]
+         [items items (cdr items)])
+        ((zero? i) v)
+      (vector-set! v i (car items))))
+
   (let ([result (call/1cc (lambda (k)
                   (and (parse-object-start bip)
                        (let loop ([result '()])
@@ -220,8 +232,8 @@
              (put-string top (json->string (vector-ref x 1)))
              (do ([i 2 (add1 i)])
                  ((>= i (vector-length x)))
-                 (put-char top #\,)
-                 (put-string top (json->string (vector-ref x i))))
+               (put-char top #\,)
+               (put-string top (json->string (vector-ref x i))))
              (put-string top "]"))))))
 
 (define (json-key/value->string x)
@@ -229,16 +241,16 @@
 
 (define (json-object->string x)
   (and (json-object? x)
-       (let ([x (json-object-data x)])
-         (if (null? x)
-             "{}"
-             (apply
-               string-append
-               `("{" ,(json-key/value->string (car x))
-                     ,@(map (lambda (x)
-                             (string-append "," (json-key/value->string x)))
-                           (cdr x))
-                     "}"))))))
+       (if (= (vector-length x) 1)
+            "{}"
+           (call-with-string-output-port (lambda (top)
+             (put-string top "{")
+             (put-string top (json-key/value->string (vector-ref x 1)))
+             (do ([i 2 (add1 i)])
+                 ((>= i (vector-length x)))
+               (put-char top #\,)
+               (put-string top (json-key/value->string (vector-ref x i))))
+             (put-string top "}"))))))
 
 (define (json->string x)
   (or (json-number->string x)

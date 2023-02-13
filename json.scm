@@ -5,10 +5,8 @@
           json-empty?
           json-false?
           json-null?
-          json-object-data
           json-object?
-          json-true?
-          make-json-object)
+          json-true?)
 
   (import (chezscheme))
 
