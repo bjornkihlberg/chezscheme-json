@@ -1,12 +1,13 @@
 (library (json)
   (export get-json
           json->string
+          json-object?
           json-array?
           json-empty?
-          json-false?
           json-null?
-          json-object?
-          json-true?)
+          json-true?
+          json-false?
+          json-boolean?)
 
   (import (chezscheme))
 

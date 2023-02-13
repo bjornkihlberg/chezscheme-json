@@ -12,6 +12,8 @@
 (define (json-null? x) (eq? x 'json-null))
 (define (json-true? x) (eq? x 'json-true))
 (define (json-false? x) (eq? x 'json-false))
+(define (json-boolean? x) (or (eq? x 'json-true)
+                              (eq? x 'json-false)))
 
 (define (parse-empty bip)
   (and (eof-object? (lookahead-u8 bip))

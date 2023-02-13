@@ -21,12 +21,13 @@
 (let ()
   (import (json))
   (assert-with equal? (library-exports '(json))
-    '(json-true?
-      json-object?
-      json-null?
+    '(json-boolean?
       json-false?
+      json-true?
+      json-null?
       json-empty?
       json-array?
+      json-object?
       json->string
       get-json)))
 
