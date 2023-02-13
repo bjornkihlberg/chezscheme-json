@@ -189,8 +189,8 @@
     (open-bytevector-input-port (string->utf8 json-document))
     (lambda (bip)
       (assert-with equal? (json:get-json bip)
-                          '#(json-object (("hey" . #(json-object (("x" . #(json-array 1 json-null 3)))))
-                                          ("yo" . #(json-object ())))))
+                          '#(json-object (("yo" . #(json-object ()))
+                                          ("hey" . #(json-object (("x" . #(json-array 1 json-null 3))))))))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
 (let ([json-document (json:json->string '#(json-array))])

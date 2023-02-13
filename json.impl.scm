@@ -149,33 +149,30 @@
     (and result (make-json-array result))))
 
 (define (parse-key-value-pair bip)
-  (call/1cc
-    (lambda (k)
-      (let ([key (parse-string bip)])
-        (unless key (k #f))
-        (parse-padding* bip)
-        (unless (parse-colon bip) (k #f))
-        (parse-padding* bip)
-        (let ([value (parse-json-term bip)])
-          (and value
-               (cons key value)))))))
+  (call/1cc (lambda (k)
+    (let ([key (parse-string bip)])
+      (unless key (k #f))
+      (parse-padding* bip)
+      (unless (parse-colon bip) (k #f))
+      (parse-padding* bip)
+      (let ([value (parse-json-term bip)])
+        (and value
+             (cons key value)))))))
 
 (define (parse-object bip)
-  (let ([result (call/1cc
-                  (lambda (k)
-                    (and (parse-object-start bip)
-                         (let loop ([result '()])
+  (let ([result (call/1cc (lambda (k)
+                  (and (parse-object-start bip)
+                       (let loop ([result '()])
+                         (parse-padding* bip)
+                         (let ([k/v (parse-key-value-pair bip)])
                            (parse-padding* bip)
-                           (let ([k/v (parse-key-value-pair bip)])
-                             (parse-padding* bip)
-                             (cond
-                               [(parse-object-end bip)
-                               (if k/v (cons k/v result) result)]
-                               [(and k/v (parse-comma bip))
-                               (loop (cons k/v result))]
-                               [else (k #f)]))))))])
-    (and result
-         (make-json-object (reverse result)))))
+                           (cond
+                             [(parse-object-end bip)
+                                (if k/v (cons k/v result) result)]
+                             [(and k/v (parse-comma bip))
+                                (loop (cons k/v result))]
+                             [else (k #f)]))))))])
+    (and result (make-json-object result))))
 
 (define (parse-json-term bip)
   (parse-padding* bip)
