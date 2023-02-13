@@ -1,5 +1,9 @@
 (define-structure (json-object data))
-(define-structure (json-array data))
+(define (json-array? x)
+  (and (vector? x)
+       (positive? (vector-length x))
+       (eq? (vector-ref x 0) 'json-array)))
+
 (define (json-empty? x) (eq? x 'json-empty))
 (define (json-null? x) (eq? x 'json-null))
 (define (json-true? x) (eq? x 'json-true))
@@ -124,6 +128,14 @@
                        [else (loop)]))))))))))
 
 (define (parse-array bip)
+  (define (make-json-array items)
+    (define v (make-vector (add1 (length items))))
+    (vector-set! v 0 'json-array)
+    (do ([i (sub1 (vector-length v)) (sub1 i)]
+         [items items (cdr items)])
+        ((zero? i) v)
+        (vector-set! v i (car items))))
+
   (let ([result (and (parse-array-start bip)
                      (let ([x (parse-json-term bip)])
                        (if x
@@ -134,8 +146,7 @@
                                    (and x (loop (cons x xs))))
                                  (and (parse-array-end bip) xs)))
                            (and (parse-array-end bip) '()))))])
-    (and result
-         (make-json-array (reverse result)))))
+    (and result (make-json-array result))))
 
 (define (parse-key-value-pair bip)
   (call/1cc
@@ -179,22 +190,6 @@
 
 (define get-json parse-json-term)
 
-(define (json-key-value-pair->scheme key/value)
-  (let ([key (car key/value)] [value (cdr key/value)])
-    `(,(string->symbol key) . ,(json->scheme value))))
-
-(define (json->scheme x)
-  (cond
-    [(number? x) x]
-    [(string? x) x]
-    [(json-empty? x) '()]
-    [(json-null? x) '()]
-    [(json-true? x) #t]
-    [(json-false? x) #f]
-    [(json-array? x) (map json->scheme (json-array-data x))]
-    [(json-object? x) (map json-key-value-pair->scheme (json-object-data x))]
-    [else (error 'json->scheme "Invalid JSON structure")]))
-
 (define (json-number->string n)
   (and (number? n)
        (number->string n)))
@@ -221,15 +216,16 @@
 
 (define (json-array->string x)
   (and (json-array? x)
-        (let ([x (json-array-data x)])
-          (if (null? x)
-              "[]"
-              (apply
-                string-append
-                `("[" ,(json->string (car x))
-                      ,@(map (lambda (x) (string-append "," (json->string x)))
-                            (cdr x))
-                      "]"))))))
+       (if (= (vector-length x) 1)
+           "[]"
+           (call-with-string-output-port (lambda (top)
+             (put-string top "[")
+             (put-string top (json->string (vector-ref x 1)))
+             (do ([i 2 (add1 i)])
+                 ((>= i (vector-length x)))
+                 (put-char top #\,)
+                 (put-string top (json->string (vector-ref x i))))
+             (put-string top "]"))))))
 
 (define (json-key/value->string x)
   (string-append "\"" (car x) "\":" (json->string (cdr x))))
@@ -256,19 +252,3 @@
       (json-empty->string x)
       (json-array->string x)
       (json-object->string x)))
-
-(define (json-key/value? x)
-  (and (pair? x)
-       (string? (car x))
-       (json? (cdr x))))
-
-(define (json? x)
-  (cond
-    [(json-array? x) (for-all json? (json-array-data x))]
-    [(json-object? x) (for-all json-key/value? (json-object-data x))]
-    [else
-      (or (number? x)
-          (string? x)
-          (json-true? x)
-          (json-false? x)
-          (json-null? x))]))
