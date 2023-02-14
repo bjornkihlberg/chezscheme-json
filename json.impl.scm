@@ -264,22 +264,22 @@
       (json-array->string x)
       (json-object->string x)))
 
-(define-syntax (match-array code)
-  (syntax-case code ()
+(define-syntax match-array
+  (syntax-rules ()
 
     [(_ val patterns ks kf)
-      #'(match-array val 1 patterns ks kf)]
+      (match-array val 1 patterns ks kf)]
 
     [(_ val offset () ks kf)
-      #'(if (zero? (- offset (vector-length val))) ks kf)]
+      (if (zero? (- offset (vector-length val))) ks kf)]
 
     [(_ val 1 (keyword pattern) ks kf)
       (eq? (syntax->datum #'keyword) '...)
-      #'(match-clause val pattern ks kf)]
+      (match-clause val pattern ks kf)]
 
     [(_ val offset (keyword pattern) ks kf)
       (eq? (syntax->datum #'keyword) '...)
-      #'(let ([v (make-vector (add1 (- (vector-length val) offset)))])
+      (let ([v (make-vector (add1 (- (vector-length val) offset)))])
           (vector-set! v 0 'json-array)
           (do ([val-i (sub1 (vector-length val)) (sub1 val-i)]
                [v-i (sub1 (vector-length v)) (sub1 v-i)])
@@ -288,7 +288,7 @@
             (vector-set! v v-i (vector-ref val val-i))))]
 
     [(_ val offset (pattern pattern* ...) ks kf)
-      #'(let ([kff (lambda () kf)]) (if (positive? (- (vector-length val) offset))
+      (let ([kff (lambda () kf)]) (if (positive? (- (vector-length val) offset))
           (match-clause (vector-ref val offset) pattern
             (match-array val (add1 offset) (pattern* ...) ks (kff))
             (kff))
@@ -329,84 +329,84 @@
       (let ([key-string (symbol->string (syntax->datum #'key))])
         #`(match-object val ((#,key-string . key) pattern* ...) ks kf))]))
 
-(define-syntax (match-clause code)
-  (syntax-case code ()
+(define-syntax match-clause
+  (syntax-rules ()
 
     [(_ val wildcard ks kf)
       (let ([wildcard (syntax->datum #'wildcard)])
         (or (eq? wildcard 'else)
             (eq? wildcard '_)
             (eq? wildcard '=>)))
-      #'ks]
+      ks]
 
     [(_ val (keyword pattern* ...) ks kf)
       (eq? (syntax->datum #'keyword) 'object)
-      #'(let ([kff (lambda () kf)]) (if (and (vector? val) (symbol=? (vector-ref val 0) 'json-object))
+      (let ([kff (lambda () kf)]) (if (and (vector? val) (symbol=? (vector-ref val 0) 'json-object))
           (match-object val (pattern* ...) ks (kff))
           (kff)))]
 
     [(_ val (keyword pattern* ...) ks kf)
       (eq? (syntax->datum #'keyword) 'array)
-      #'(let ([kff (lambda () kf)]) (if (and (vector? val) (symbol=? (vector-ref val 0) 'json-array))
+      (let ([kff (lambda () kf)]) (if (and (vector? val) (symbol=? (vector-ref val 0) 'json-array))
           (match-array val (pattern* ...) ks (kff))
           (kff)))]
 
     [(_ val (keyword expr pattern) ks kf)
       (eq? (syntax->datum #'keyword) '->)
-      #'(let ([x (expr val)]) (match-clause x pattern ks kf))]
+      (let ([x (expr val)]) (match-clause x pattern ks kf))]
 
     [(_ val (keyword var pattern) ks kf)
       (eq? (syntax->datum #'keyword) '@)
-      #'(let ([kff (lambda () kf)]) (match-clause val var
+      (let ([kff (lambda () kf)]) (match-clause val var
           (match-clause val pattern ks (kff))
           (kff)))]
 
     [(_ val (keyword pred pattern) ks kf)
       (eq? (syntax->datum #'keyword) '?)
-      #'(let ([kff (lambda () kf)]) (if (pred val)
+      (let ([kff (lambda () kf)]) (if (pred val)
           (match-clause val pattern ks (kff))
           (kff)))]
 
     [(_ val json-lit ks kf)
       (eq? (syntax->datum #'json-lit) 'null)
-      #'(if (eq? val 'json-null) ks kf)]
+      (if (eq? val 'json-null) ks kf)]
 
     [(_ val json-lit ks kf)
       (eq? (syntax->datum #'json-lit) 'true)
-      #'(if (eq? val 'json-true) ks kf)]
+      (if (eq? val 'json-true) ks kf)]
 
     [(_ val json-lit ks kf)
       (eq? (syntax->datum #'json-lit) 'false)
-      #'(if (eq? val 'json-false) ks kf)]
+      (if (eq? val 'json-false) ks kf)]
 
     [(_ val lit ks kf)
       (not (symbol? (syntax->datum #'lit)))
-      #'(if (equal? val lit) ks kf)]
+      (if (equal? val lit) ks kf)]
 
     [(_ val var ks kf)
-      #'(let ([var val]) ks)]))
+      (let ([var val]) ks)]))
 
-(define-syntax (match-clause* code)
-  (syntax-case code ()
+(define-syntax match-clause*
+  (syntax-rules ()
     [(_ val)
-      #'(void)]
+      (void)]
 
     [(_ val (pattern (keyword test) e ...) clause* ...)
       (eq? (syntax->datum #'keyword) '?)
-      #'(let ([kff (lambda () (match-clause* val clause* ...))])
+      (let ([kff (lambda () (match-clause* val clause* ...))])
           (match-clause val pattern
             (if test (begin e ...) (kff))
             (kff)))]
 
     [(_ val (pattern e ...) clause* ...)
-      #'(match-clause val pattern
+      (match-clause val pattern
           (begin e ...)
           (match-clause* val clause* ...))]))
 
-(define-syntax (match code)
-  (syntax-case code ()
+(define-syntax match
+  (syntax-rules ()
     [(_ val)
-      #'(match-clause* val)]
+      (match-clause* val)]
 
     [(_ val clause* ...)
-      #'(let ([x val]) (match-clause* x clause* ...))]))
+      (let ([x val]) (match-clause* x clause* ...))]))
