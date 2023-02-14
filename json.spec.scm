@@ -1,4 +1,4 @@
-(module json (get-json json->string)
+(module json (get-json json->string match match-clause match-clause* match-array match-object)
   (include "json.impl.scm"))
 
 (import (prefix json json:))
@@ -29,6 +29,7 @@
       json-array?
       json-object?
       json->string
+      match
       get-json)))
 
 (let ([json-document ""])
@@ -200,5 +201,77 @@
 
 (let ([json-document (json:json->string '#(json-array 1 #(json-array 2 3) json-null))])
   (assert-with string=? json-document "[1,[2,3],null]"))
+
+(let ([json-expression 'json-null])
+  (assert-with = 1337
+    (json:match json-expression
+      [5 42]
+      [null 1337]))
+  
+  (assert-with = 1337
+    (json:match json-expression
+      [5 42]
+      ['json-null 1337])))
+
+(let ([json-expression 'json-true])
+  (assert-with = 1337
+    (json:match json-expression
+      [false 42]
+      [true 1337]))
+  
+  (assert-with = 1337
+    (json:match json-expression
+      [false 42]
+      ['json-true 1337])))
+
+(let ([json-expression 'json-false])
+  (assert-with = 1337
+    (json:match json-expression
+      [true 42]
+      [false 1337]))
+  
+  (assert-with = 1337
+    (json:match json-expression
+      [true 42]
+      ['json-false 1337])))
+
+(let ([json-expression 5])
+  (assert-with = 1337
+    (json:match json-expression
+      [4 42]
+      [5 1337])))
+
+(let ([json-expression "huey"])
+  (assert-with = 1337
+    (json:match json-expression
+      ["dewey" 42]
+      ["huey" 1337]
+      ["louie" 13])))
+
+(assert-with equal?
+  (json:match '#(json-array 1 2 3)
+    [(array _ ... rest) rest])
+  '#(json-array 2 3))
+
+(assert-with =
+  (json:match '#(json-array 1 2 3)
+    [(array _ (? odd? _) ... (-> vector-length l)) (+ 1000 l)]
+    [(array _ (? even? _) ... (-> vector-length l)) (+ 2000 l)])
+  2002)
+
+(assert-with =
+  (json:match '#(json-object ("huey" . 1337) ("dewey" . 42) ("louie" . 3.14))
+    [(object ("louie" . x) huey ... _) (+ huey x)])
+  (+ 1337 3.14))
+
+(assert-with equal?
+  (json:match '#(json-object ("huey" . #(json-array json-true 4 2)))
+    [(object ("huey" . (array false ... (@ xs (-> vector-length l))))
+             ("dewey" . (array true ... (@ xs (-> vector-length l))))
+             ("louie" . (array null ... (@ xs (-> vector-length l))))) #f]
+    [(object ("huey" . (array false ... (@ xs (-> vector-length l))))) #f]
+    [(object ("huey" . (array true ... (@ xs (-> vector-length (? even? l)))))) #f]
+    [(object ("huey" . (array true ... (@ xs (-> vector-length (? odd? l)))))) (? #t) (cons l xs)])
+  (cons 3 '#(json-array 4 2)))
 
 (display "All tests passed!\n")

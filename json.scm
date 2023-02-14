@@ -1,5 +1,6 @@
 (library (json)
   (export get-json
+          match
           json->string
           json-object?
           json-array?
