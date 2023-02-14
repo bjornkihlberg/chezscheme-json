@@ -18,6 +18,8 @@
 
 (display "Running tests...\n")
 
+(define t0 (current-time))
+
 (let ()
   (import (json))
   (assert-with equal? (library-exports '(json))
@@ -274,4 +276,7 @@
     [(object ("huey" . (array true ... (@ xs (-> vector-length (? odd? l)))))) (? #t) (cons l xs)])
   (cons 3 '#(json-array 4 2)))
 
+(define t1 (current-time))
+
 (display "All tests passed!\n")
+(format #t "~s\n" (time-difference t1 t0))
