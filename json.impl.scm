@@ -421,10 +421,13 @@
 
   (define (match-clause-transformer val-name pattern on-match on-mismatch)
     (cond [(symbol? pattern)
-            (if (symbol=? pattern '_)
-                on-match
-                `(let ([,pattern ,val-name]) ,on-match))]
-          
+            (case pattern
+              [_ on-match]
+
+              [null `(if (eq? ,val-name 'json-null) ,on-match ,on-mismatch)]
+
+              [else `(let ([,pattern ,val-name]) ,on-match)])]
+
           [(not (symbol? pattern))
             `(if (equal? ,val-name ,pattern)
                  ,on-match
