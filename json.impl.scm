@@ -425,6 +425,8 @@
               [_ on-match]
 
               [null `(if (eq? ,val-name 'json-null) ,on-match ,on-mismatch)]
+              [true `(if (eq? ,val-name 'json-true) ,on-match ,on-mismatch)]
+              [false `(if (eq? ,val-name 'json-false) ,on-match ,on-mismatch)]
 
               [else `(let ([,pattern ,val-name]) ,on-match)])]
 

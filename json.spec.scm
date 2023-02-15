@@ -340,6 +340,22 @@
   (json:match2 'json-null [null 'success])
   'success)
 
+(assert-with eq?
+  (json:match2 1401 [true 'success])
+  (void))
+
+(assert-with eq?
+  (json:match2 'json-true [true 'success])
+  'success)
+
+(assert-with eq?
+  (json:match2 1402 [false 'success])
+  (void))
+
+(assert-with eq?
+  (json:match2 'json-false [false 'success])
+  'success)
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")
