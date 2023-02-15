@@ -352,6 +352,36 @@
   (json:match2 1402 [false 'success])
   (void))
 
+(assert-with symbol=?
+  (guard
+    (e [else
+          (assert-with string=?
+            (format (condition-message e) (condition-irritants e))
+            "variable (null) is not bound")
+          'error])
+    (json:match2 'json-null [null null]))
+  'error)
+
+(assert-with symbol=?
+  (guard
+    (e [else
+          (assert-with string=?
+            (format (condition-message e) (condition-irritants e))
+            "variable (true) is not bound")
+          'error])
+    (json:match2 'json-true [true true]))
+  'error)
+
+(assert-with symbol=?
+  (guard
+    (e [else
+          (assert-with string=?
+            (format (condition-message e) (condition-irritants e))
+            "variable (false) is not bound")
+          'error])
+    (json:match2 'json-false [false false]))
+  'error)
+
 (assert-with eq?
   (json:match2 'json-false [false 'success])
   'success)
