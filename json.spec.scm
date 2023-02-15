@@ -312,6 +312,26 @@
   (json:match2 55 [x (? #f) x])
   (void))
 
+(assert-with symbol=?
+  (json:match2 13 [_ 'success])
+  'success)
+
+(assert-with eq?
+  (json:match2 14 [14 'success])
+  'success)
+
+(assert-with eq?
+  (json:match2 14 [13 'success])
+  (void))
+
+(assert-with eq?
+  (json:match2 "huey" ["huey" 'success])
+  'success)
+
+(assert-with eq?
+  (json:match2 'json-null ['json-null 'success])
+  'success)
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")

@@ -420,8 +420,17 @@
     (syntax-rules () [(_ args ...) (syntax-violation macro-name (format args ...) code)]))
 
   (define (match-clause-transformer val-name pattern on-match on-mismatch)
-    (cond [(symbol? pattern) `(let ([,pattern ,val-name]) ,on-match)]
-          [else (match-error "Unknown syntax!")]))
+    (cond [(symbol? pattern)
+            (if (symbol=? pattern '_)
+                on-match
+                `(let ([,pattern ,val-name]) ,on-match))]
+          
+          [(not (symbol? pattern))
+            `(if (equal? ,val-name ,pattern)
+                 ,on-match
+                 ,on-mismatch)]
+
+          [else (match-error "Unknown pattern ~s" pattern)]))
 
   (define match-clause*-transformer
     (case-lambda
