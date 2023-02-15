@@ -430,10 +430,18 @@
 
               [else `(let ([,pattern ,val-name]) ,on-match)])]
 
-          [(not (symbol? pattern))
-            `(if (equal? ,val-name ,pattern)
-                 ,on-match
-                 ,on-mismatch)]
+          [(pair? pattern)
+            (case (car pattern)
+              [quote `(if (equal? ,val-name ,pattern) ,on-match ,on-mismatch)]
+              [? (match-error "Unimplemented pattern (? predicate pattern)")]
+              [@ (match-error "Unimplemented pattern (@ pattern pattern)")]
+              [-> (match-error "Unimplemented pattern (-> procedure pattern)")]
+              [object (match-error "Unimplemented pattern (object (key . pattern) ...)")]
+              [array (match-error "Unimplemented pattern (array pattern ...)")]
+              [else (match-error "Unknown keyword ~s in pattern ~s" (car pattern) pattern)])]
+
+          [(atom? pattern)
+            `(if (equal? ,val-name ,pattern) ,on-match ,on-mismatch)]
 
           [else (match-error "Unknown pattern ~s" pattern)]))
 
