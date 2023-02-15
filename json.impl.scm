@@ -433,7 +433,18 @@
           [(pair? pattern)
             (case (car pattern)
               [quote `(if (equal? ,val-name ,pattern) ,on-match ,on-mismatch)]
-              [? (match-error "Unimplemented pattern (? predicate pattern)")]
+
+              [? (let ([pred/pattern (cdr pattern)])
+                  (unless (= (length pred/pattern) 2)
+                    (match-error "Unexpected pattern ~s, expected (? predicate pattern) in" pattern))
+
+                  `(let ([on-mismatch-lambda (lambda () ,on-mismatch)])
+                    (if (,(car pred/pattern) ,val-name)
+                        ,(match-clause-transformer val-name (cadr pred/pattern)
+                          on-match
+                          '(on-mismatch-lambda))
+                        (on-mismatch-lambda))))]
+
               [@ (match-error "Unimplemented pattern (@ pattern pattern)")]
               [-> (match-error "Unimplemented pattern (-> procedure pattern)")]
               [object (match-error "Unimplemented pattern (object (key . pattern) ...)")]

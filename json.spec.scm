@@ -386,6 +386,34 @@
   (json:match2 'json-false [false 'success])
   'success)
 
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected pattern (?), expected (? predicate pattern) in")
+          'error])
+    (expand '(json:match2 1399 [(?) 'success])))
+  'error)
+
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected pattern (? odd?), expected (? predicate pattern) in")
+          'error])
+    (expand '(json:match2 1399 [(? odd?) 'success])))
+  'error)
+
+(assert-with eq?
+  (json:match2 1403 [(? odd? x) (add1 x)])
+  1404)
+
+(assert-with eq?
+  (json:match2 1405 [(? even? x) (add1 x)])
+  (void))
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")
