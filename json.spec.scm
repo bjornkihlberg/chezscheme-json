@@ -1,4 +1,4 @@
-(module json (get-json json->string match match-clause match-clause* match-array match-object)
+(module json (get-json json->string match2 match match-clause match-clause* match-array match-object)
   (include "json.impl.scm"))
 
 (import (prefix json json:))
@@ -275,6 +275,42 @@
     [(object ("huey" . (array true ... (@ xs (-> vector-length (? even? l)))))) #f]
     [(object ("huey" . (array true ... (@ xs (-> vector-length (? odd? l)))))) (? #t) (cons l xs)])
   (cons 3 '#(json-array 4 2)))
+
+(assert-with eq?
+  (json:match2 2023)
+  (void))
+
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Expected (json:match2 value) but got")
+          'error])
+    (expand '(json:match2)))
+  'error)
+
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected clause 5, expected (json:match2 value [pattern expressions ...] clauses ...) but got")
+          'error])
+    (expand '(json:match2 2023 5)))
+  'error)
+
+(assert-with =
+  (json:match2 13 [x (sub1 x)])
+  12)
+
+(assert-with =
+  (json:match2 48 [x (? #t) (add1 x)])
+  49)
+
+(assert-with eq?
+  (json:match2 55 [x (? #f) x])
+  (void))
 
 (define t1 (current-time))
 

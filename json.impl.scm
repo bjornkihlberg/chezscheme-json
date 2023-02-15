@@ -410,3 +410,54 @@
 
     [(_ val clause* ...)
       (let ([x val]) (match-clause* x clause* ...))]))
+
+(define-syntax (match2 code)
+  (define macro (syntax->datum code))
+  (define macro-name (car macro))
+  (define macro-args (cdr macro))
+
+  (define-syntax match-error
+    (syntax-rules () [(_ args ...) (syntax-violation macro-name (format args ...) code)]))
+
+  (define (match-clause-transformer val-name pattern on-match on-mismatch)
+    (cond [(symbol? pattern) `(let ([,pattern ,val-name]) ,on-match)]
+          [else (match-error "Unknown syntax!")]))
+
+  (define match-clause*-transformer
+    (case-lambda
+      [() '(void)]
+
+      [(clause . clause*)
+        (unless (pair? clause)
+          (match-error
+            "Unexpected clause ~s, expected (~s value [pattern expressions ...] clauses ...) but got"
+            clause
+            macro-name))
+
+        (let ([pattern (car clause)]
+              [?/expressions* (cdr clause)])
+          (if (and (pair? ?/expressions*)
+                   (pair? (car ?/expressions*))
+                   (eq? (caar ?/expressions*) '?))
+
+              `(let ([on-mismatch-lambda (lambda () ,(apply match-clause*-transformer clause*))])
+                ,(match-clause-transformer 'val-arg pattern
+                  `(if ,(cadar ?/expressions*)
+                       (begin ,@(cdr ?/expressions*))
+                       (on-mismatch-lambda))
+                  '(on-mismatch-lambda)))
+
+              (match-clause-transformer 'val-arg pattern
+                `(begin ,@?/expressions*)
+                (apply match-clause*-transformer clause*))))]))
+
+  (define match-transformer
+    (case-lambda
+      [() (match-error "Expected (~s value) but got" macro-name)]
+
+      [(val) '(void)]
+
+      [(val . clause*)
+        `(let ([val-arg ,val]) ,(apply match-clause*-transformer clause*))]))
+
+  (datum->syntax #'code (apply match-transformer macro-args)))
