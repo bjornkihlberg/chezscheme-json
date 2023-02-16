@@ -414,6 +414,28 @@
   (json:match2 1405 [(? even? x) (add1 x)])
   (void))
 
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected pattern (\\x40; x), expected (@ pattern pattern pattern ...) in")
+          'error])
+    (expand '(json:match2 1399 [(@ x) 'success])))
+  'error)
+
+(assert-with eq?
+  (json:match2 1397 [(@ x y) (+ x y)])
+  (* 2 1397))
+
+(assert-with eq?
+  (json:match2 1396 [(@ x y z) (+ x y z)])
+  (* 3 1396))
+
+(assert-with eq?
+  (json:match2 "hello" [(@ x y) (eq? x y)])
+  #t)
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")

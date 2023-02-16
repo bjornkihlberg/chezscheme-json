@@ -445,7 +445,16 @@
                           '(on-mismatch-lambda))
                         (on-mismatch-lambda))))]
 
-              [@ (match-error "Unimplemented pattern (@ pattern pattern)")]
+              [@ (let ([pattern* (cdr pattern)])
+                  (unless (> (length pattern*) 1)
+                    (match-error "Unexpected pattern ~s, expected (@ pattern pattern pattern ...) in" pattern))
+
+                  `(let ([on-mismatch-lambda (lambda () on-mismatch)])
+                    ,(fold-right
+                      (lambda (pattern on-match)
+                        (match-clause-transformer val-name pattern on-match '(on-mismatch-lambda)))
+                      on-match pattern*)))]
+
               [-> (match-error "Unimplemented pattern (-> procedure pattern)")]
               [object (match-error "Unimplemented pattern (object (key . pattern) ...)")]
               [array (match-error "Unimplemented pattern (array pattern ...)")]
