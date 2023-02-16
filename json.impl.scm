@@ -449,7 +449,7 @@
                   (unless (> (length pattern*) 1)
                     (match-error "Unexpected pattern ~s, expected (@ pattern pattern pattern ...) in" pattern))
 
-                  `(let ([on-mismatch-lambda (lambda () on-mismatch)])
+                  `(let ([on-mismatch-lambda (lambda () ,on-mismatch)])
                     ,(fold-right
                       (lambda (pattern on-match)
                         (match-clause-transformer val-name pattern on-match '(on-mismatch-lambda)))

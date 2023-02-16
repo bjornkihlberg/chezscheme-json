@@ -433,6 +433,11 @@
   (* 3 1396))
 
 (assert-with eq?
+  (json:match2 1396 [(@ x y z) (? #f) (+ x y z)]
+                    [(@ x y z) (add1 (+ x y z))])
+  (add1 (* 3 1396)))
+
+(assert-with eq?
   (json:match2 "hello" [(@ x y) (eq? x y)])
   #t)
 
