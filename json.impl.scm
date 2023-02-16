@@ -455,7 +455,16 @@
                         (match-clause-transformer val-name pattern on-match '(on-mismatch-lambda)))
                       on-match pattern*)))]
 
-              [-> (match-error "Unimplemented pattern (-> procedure pattern)")]
+              [-> (let ([proc/pattern (cdr pattern)])
+                    (unless (= (length proc/pattern) 2)
+                      (match-error "Unexpected pattern ~s, expected (-> procedure pattern) in" pattern))
+
+                    (let ([new-val-name (gensym "val-arg")])
+                      `(let ([,new-val-name (,(car proc/pattern) ,val-name)])
+                        ,(match-clause-transformer new-val-name (cadr proc/pattern)
+                          on-match
+                          on-mismatch))))]
+
               [object (match-error "Unimplemented pattern (object (key . pattern) ...)")]
               [array (match-error "Unimplemented pattern (array pattern ...)")]
               [else (match-error "Unknown keyword ~s in pattern ~s" (car pattern) pattern)])]

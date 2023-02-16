@@ -441,6 +441,39 @@
   (json:match2 "hello" [(@ x y) (eq? x y)])
   #t)
 
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected pattern (-> x), expected (-> procedure pattern) in")
+          'error])
+    (expand '(json:match2 1393 [(-> x) 'success])))
+  'error)
+
+(assert-with symbol=?
+  (guard
+    (e [(syntax-violation? e)
+          (assert-with string=?
+            (condition-message e)
+            "Unexpected pattern (-> a b c), expected (-> procedure pattern) in")
+          'error])
+    (expand '(json:match2 1393 [(-> a b c) 'success])))
+  'error)
+
+(assert-with eq?
+  (json:match2 1395 [(-> add1 x) x])
+  1396)
+
+(assert-with eq?
+  (json:match2 1395 [(@ (-> add1 x) y) (+ x y)])
+  (+ 1395 1395 1))
+
+(assert-with eq?
+  (json:match2 1395 [(@ (-> add1 x) y) (? #f) (+ x y)]
+                    [(-> sub1 x) x])
+  1394)
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")
