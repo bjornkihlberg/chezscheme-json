@@ -428,7 +428,7 @@
         (cond
           [(null? patterns)
             (match-error "Unimplemented array pattern (array) in")]
-          [(and (pair? patterns) (eq? (car pattern) '...))
+          [(and (pair? patterns) (eq? (car patterns) '...))
             (if (= offset 1)
                 (match-error "Unimplemented array pattern (array ... pattern) in")
                 (match-error "Unimplemented array pattern (array ... pattern) in"))]
