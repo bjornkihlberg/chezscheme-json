@@ -474,6 +474,51 @@
                     [(-> sub1 x) x])
   1394)
 
+(assert-with eq?
+  (json:match2 '#(json-array)
+    [(array) 1380])
+  1380)
+
+(assert-with eq?
+  (json:match2 '#()
+    [(array) 1379])
+  (void))
+
+(assert-with eq?
+  (json:match2 '#(4 5)
+    [(array x) x])
+  (void))
+
+(assert-with eq?
+  (json:match2 4
+    [(array x) x])
+  (void))
+
+(assert-with eq?
+  (json:match2 '#(json-array)
+    [(array x) x])
+  (void))
+
+(assert-with eq?
+  (json:match2 '#(json-array 1 2 3)
+    [(array x) x])
+  (void))
+
+(assert-with eq?
+  (json:match2 '#(json-array 2 3 5)
+    [(array x y z) (* x y z)])
+  30)
+
+(assert-with eq?
+  (json:match2 '#(json-array 2 3 5)
+    [(array x ... (-> vector-length l)) (* x l)])
+  6)
+
+(assert-with equal?
+  (json:match2 '#(json-array 2 3 5)
+    [(array _ ... rest) rest])
+  '#(json-array 3 5))
+
 (define t1 (current-time))
 
 (display "All tests passed!\n")

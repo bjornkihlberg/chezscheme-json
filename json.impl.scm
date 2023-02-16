@@ -419,6 +419,25 @@
   (define-syntax match-error
     (syntax-rules () [(_ args ...) (syntax-violation macro-name (format args ...) code)]))
 
+  (define match-array-transformer
+    (case-lambda
+      [(val-name patterns on-match on-mismatch)
+        (match-array-transformer val-name 1 patterns on-match on-mismatch)]
+
+      [(val-name offset patterns on-match on-mismatch)
+        (cond
+          [(null? patterns)
+            (match-error "Unimplemented array pattern (array) in")]
+          [(and (pair? patterns) (eq? (car pattern) '...))
+            (if (= offset 1)
+                (match-error "Unimplemented array pattern (array ... pattern) in")
+                (match-error "Unimplemented array pattern (array ... pattern) in"))]
+          [(pair? patterns)
+            (let ([pattern (car patterns)]
+                  [pattern* (cdr patterns)])
+              (match-error "Unimplemented array pattern (array pattern pattern ...) in"))]
+          [else (match-error "Unknown array pattern (array ~s) in" patterns)])]))
+
   (define (match-clause-transformer val-name pattern on-match on-mismatch)
     (cond [(symbol? pattern)
             (case pattern
@@ -466,13 +485,23 @@
                           on-mismatch))))]
 
               [object (match-error "Unimplemented pattern (object (key . pattern) ...)")]
-              [array (match-error "Unimplemented pattern (array pattern ...)")]
-              [else (match-error "Unknown keyword ~s in pattern ~s" (car pattern) pattern)])]
+
+              [array
+                `(let ([on-mismatch-lambda (lambda () ,on-match)])
+                  (if (and (vector? ,val-name)
+                           (> (vector-length ,val-name) 0)
+                           (symbol=? (vector-ref ,val-name 0) 'json-array))
+                      ,(match-array-transformer val-name (cdr pattern)
+                        on-match
+                        '(on-mismatch-lambda))
+                      (on-mismatch-lambda)))]
+
+              [else (match-error "Unknown keyword ~s in pattern ~s in" (car pattern) pattern)])]
 
           [(atom? pattern)
             `(if (equal? ,val-name ,pattern) ,on-match ,on-mismatch)]
 
-          [else (match-error "Unknown pattern ~s" pattern)]))
+          [else (match-error "Unknown pattern ~s in" pattern)]))
 
   (define match-clause*-transformer
     (case-lambda
