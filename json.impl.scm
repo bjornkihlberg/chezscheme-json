@@ -1,3 +1,37 @@
+; (string->utf8 ",:")
+
+; (tokenize (open-bytevector-input-port (string->utf8 "  ")))
+
+(define (get-token bip)
+  (let loop ()
+    (let ([c (lookahead-u8 bip)])
+      (cond
+        [(or (eq? c 32) (eq? c 10) (eq? c 9)) ; \#space \#newline #\tab
+          (get-u8 bip) (loop)]
+
+        [(eq? c 123) ; \#{
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'lbrace p))]
+
+        [(eq? c 125) ; \#}
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'rbrace p))]
+
+        [(eq? c 91) ; \#[
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'lbrack p))]
+
+        [(eq? c 93) ; \#]
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'rbrack p))]
+
+        [(eq? c 44) ; \#,
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'comma p))]
+
+        [(eq? c 58) ; \#:
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'colon p))]
+
+        [(eof-object? c)
+          (let ([p (port-position bip)]) (get-u8 bip) (values 'empty p))]
+
+        [else (assertion-violationf 'tokenize "Unknown token at position ~a" (port-position bip))]))))
+
 (define (json-array? x)
   (and (vector? x)
        (positive? (vector-length x))
