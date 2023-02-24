@@ -9,5 +9,5 @@ JSON library for Chez Scheme
 ## Run tests
 
 ```
-scheme --script tests.ss
+scheme --script json.spec.scm
 ```
