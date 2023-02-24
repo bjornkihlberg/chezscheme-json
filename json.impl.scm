@@ -125,21 +125,15 @@
                        [(and (eq? 34 x) (not escaped))]
                        [else (put-u8 bop x) (loop #f)]))))))))))
 
-(define (parse-number bip)
-  (and (case (lookahead-u8 bip)
-         [(45 48 49 50 51 52 53 54 55 56 57) #t]
-         [else #f])
-       (string->number
-         (utf8->string
-           (call-with-bytevector-output-port
-             (lambda (bop)
-               (let loop ()
-                 (let ([x (get-u8 bip)])
-                   (unless (eof-object? x)
-                     (put-u8 bop x)
-                     (case (lookahead-u8 bip)
-                       [(10 13 32 44 58 93 125) #t]
-                       [else (loop)]))))))))))
+(define (parse-number bip ks kf)
+  (define (write-to-bytestring bop)
+    (do ([x (get-u8 bip) (get-u8 bip)])
+        ((or (eof-object? x) (not (put-u8 bop x)) (case (lookahead-u8 bip) [(10 13 32 44 58 93 125) #t] [else #f])))))
+  (case (lookahead-u8 bip)
+    [(45 48 49 50 51 52 53 54 55 56 57)
+      (let ([result (string->number (utf8->string (call-with-bytevector-output-port write-to-bytestring)))])
+        (if result (ks result) (kf)))]
+    [else (kf)]))
 
 (define make-array (make-parameter (lambda (items)
   (define v (make-vector (add1 (length items))))
@@ -195,7 +189,7 @@
 
 (define (parse-json-term bip)
   (parse-padding* bip)
-  (or (parse-number bip)
+  (or (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-number bip ks (lambda () (kf #f)))))))
       (parse-string bip)
       (parse-empty bip)
       (parse-null bip)
