@@ -15,10 +15,12 @@
 (define (json-boolean? x) (or (eq? x 'json-true)
                               (eq? x 'json-false)))
 
+(define make-empty (make-parameter 'json-empty))
+
 (define (parse-empty bip)
   (and (eof-object? (lookahead-u8 bip))
        (get-u8 bip)
-       'json-empty))
+       (make-empty)))
 
 (define-syntax |char n| (identifier-syntax 110))
 (define-syntax |char u| (identifier-syntax 117))
@@ -35,13 +37,17 @@
 (define-syntax |char return| (identifier-syntax 13))
 (define-syntax |char space| (identifier-syntax 32))
 
+(define make-null (make-parameter 'json-null))
+
 (define (parse-null bip)
   (and (eq? |char n| (lookahead-u8 bip))
        (get-u8 bip)
        (eq? |char u| (get-u8 bip))
        (eq? |char l| (get-u8 bip))
        (eq? |char l| (get-u8 bip))
-       'json-null))
+       (make-null)))
+
+(define make-false (make-parameter 'json-false))
 
 (define (parse-false bip)
   (and (eq? |char f| (lookahead-u8 bip))
@@ -50,7 +56,9 @@
        (eq? |char l| (get-u8 bip))
        (eq? |char s| (get-u8 bip))
        (eq? |char e| (get-u8 bip))
-       'json-false))
+       (make-false)))
+
+(define make-true (make-parameter 'json-true))
 
 (define (parse-true bip)
   (and (eq? |char t| (lookahead-u8 bip))
@@ -58,7 +66,7 @@
        (eq? |char r| (get-u8 bip))
        (eq? |char u| (get-u8 bip))
        (eq? |char e| (get-u8 bip))
-       'json-true))
+       (make-true)))
 
 (define (parse-comma bip)
   (and (eq? |char ,| (lookahead-u8 bip))
@@ -133,15 +141,14 @@
                        [(10 13 32 44 58 93 125) #t]
                        [else (loop)]))))))))))
 
-(define (parse-array bip)
-  (define (make-json-array items)
-    (define v (make-vector (add1 (length items))))
-    (vector-set! v 0 'json-array)
-    (do ([i (sub1 (vector-length v)) (sub1 i)]
-         [items items (cdr items)])
-        ((zero? i) v)
-      (vector-set! v i (car items))))
+(define make-array (make-parameter (lambda (items)
+  (define v (make-vector (add1 (length items))))
+  (vector-set! v 0 'json-array)
+  (do ([i (sub1 (vector-length v)) (sub1 i)] [items items (cdr items)])
+      ((zero? i) v)
+    (vector-set! v i (car items))))))
 
+(define (parse-array bip)
   (let ([result (and (parse-array-start bip)
                      (let ([x (parse-json-term bip)])
                        (if x
@@ -152,29 +159,27 @@
                                    (and x (loop (cons x xs))))
                                  (and (parse-array-end bip) xs)))
                            (and (parse-array-end bip) '()))))])
-    (and result (make-json-array result))))
+    (and result ((make-array) result))))
 
-(define (parse-key-value-pair bip)
-  (call/1cc (lambda (k)
-    (let ([key (parse-string bip)])
-      (unless key (k #f))
-      (parse-padding* bip)
-      (unless (parse-colon bip) (k #f))
-      (parse-padding* bip)
-      (let ([value (parse-json-term bip)])
-        (and value
-             (cons key value)))))))
+(define make-object (make-parameter (lambda (items)
+  (define v (make-vector (add1 (length items))))
+  (vector-set! v 0 'json-object)
+  (do ([i (sub1 (vector-length v)) (sub1 i)] [items items (cdr items)])
+      ((zero? i) v)
+    (vector-set! v i (car items))))))
 
 (define (parse-object bip)
-  (define (make-json-object items)
-    (define v (make-vector (add1 (length items))))
-    (vector-set! v 0 'json-object)
-    (do ([i (sub1 (vector-length v)) (sub1 i)]
-         [items items (cdr items)])
-        ((zero? i) v)
-      (vector-set! v i (car items))))
+  (define (parse-key-value-pair bip)
+    (call/1cc (lambda (k)
+      (let ([key (parse-string bip)])
+        (unless key (k #f))
+        (parse-padding* bip)
+        (unless (parse-colon bip) (k #f))
+        (parse-padding* bip)
+        (let ([value (parse-json-term bip)])
+          (and value (cons key value)))))))
 
-  (let ([result (call/1cc (lambda (k)
+  (let ([result (call/1cc (lambda (return)
                   (and (parse-object-start bip)
                        (let loop ([result '()])
                          (parse-padding* bip)
@@ -185,8 +190,8 @@
                                 (if k/v (cons k/v result) result)]
                              [(and k/v (parse-comma bip))
                                 (loop (cons k/v result))]
-                             [else (k #f)]))))))])
-    (and result (make-json-object result))))
+                             [else (return #f)]))))))])
+    (and result ((make-object) result))))
 
 (define (parse-json-term bip)
   (parse-padding* bip)
