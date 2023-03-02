@@ -144,12 +144,20 @@
 (let ([json-document "  [   1 ,2 [], [\"hello\"]]  "])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
-    (lambda (bip) (assert-with boolean=? (json:get-json bip) #f))))
+    (lambda (bip)
+      (guard (e [else (assert-with string=?
+                        (condition-message e)
+                        "Expected ] at position 11")])
+        (json:get-json bip)))))
 
 (let ([json-document "  [   1 ,2, [], [\"hello\"]  "])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
-    (lambda (bip) (assert-with boolean=? (json:get-json bip) #f))))
+    (lambda (bip)
+      (guard (e [else (assert-with string=?
+                        (condition-message e)
+                        "Expected ] at position 27")])
+        (json:get-json bip)))))
 
 (let ([json-document "{}"])
   (call-with-port
