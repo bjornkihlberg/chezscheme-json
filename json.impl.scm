@@ -115,21 +115,18 @@
 
   (let loop () (and (parse-padding bip) (loop))))
 
-(define (parse-string bip)
-  (and (eq? |char "| (lookahead-u8 bip))
-       (get-u8 bip)
-       (call/1cc
-         (lambda (k)
-           (utf8->string
-             (call-with-bytevector-output-port
-               (lambda (bop)
-                 (let loop ([escaped #f])
-                   (let ([x (get-u8 bip)])
-                     (cond
-                       [(and (eq? |char \| x) (not escaped)) (put-u8 bop x) (loop #t)]
-                       [(eq? |char newline| x) (k #f)]
-                       [(and (eq? |char "| x) (not escaped))]
-                       [else (put-u8 bop x) (loop #f)]))))))))))
+(define (parse-string bip ks kf)
+  (unless (eq? |char "| (lookahead-u8 bip)) (kf))
+  (get-u8 bip)
+  (ks (utf8->string
+    (call-with-bytevector-output-port (lambda (bop)
+      (let loop ([escaped #f])
+        (let ([x (get-u8 bip)])
+          (cond
+            [(and (eq? |char \| x) (not escaped)) (put-u8 bop x) (loop #t)]
+            [(eq? |char newline| x) (kf)]
+            [(and (eq? |char "| x) (not escaped))]
+            [else (put-u8 bop x) (loop #f)]))))))))
 
 (define (parse-number bip ks kf)
   (define (write-to-bytestring bop)
@@ -171,7 +168,7 @@
 (define (parse-object bip)
   (define (parse-key-value-pair bip)
     (call/1cc (lambda (k)
-      (let ([key (parse-string bip)])
+      (let ([key (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-string bip ks (lambda () (kf #f)))))))])
         (unless key (k #f))
         (parse-padding* bip)
         (unless (parse-colon bip) (k #f))
@@ -196,7 +193,7 @@
 (define (parse-json-term bip)
   (parse-padding* bip)
   (or (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-number bip ks (lambda () (kf #f)))))))
-      (parse-string bip)
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-string bip ks (lambda () (kf #f)))))))
       (parse-empty bip)
       (parse-null bip)
       (parse-false bip)
