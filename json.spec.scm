@@ -47,7 +47,16 @@
     (lambda (bip)
       (guard (e [else (assert-with string=?
                         (condition-message e)
-                        "Unexpected character #!eof at position 3, expected l in null")])
+                        "Unexpected EOF at position 3, expected l in null")])
+        (json:get-json bip)))))
+
+(let ([json-document "faz"])
+  (call-with-port
+    (open-bytevector-input-port (string->utf8 json-document))
+    (lambda (bip)
+      (guard (e [else (assert-with string=?
+                        (condition-message e)
+                        "Unexpected character z at position 2, expected l in false")])
         (json:get-json bip)))))
 
 (let ([json-document "123e5"])

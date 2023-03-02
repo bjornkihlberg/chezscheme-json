@@ -43,38 +43,38 @@
 (define-syntax |char return| (identifier-syntax 13))
 (define-syntax |char space| (identifier-syntax 32))
 
+(define-syntax check-next-token-character
+  (syntax-rules ()
+    [(_ bip expected-char-code expected-char expected-token)
+      (let ([c (get-u8 bip)])
+        (unless (eq? expected-char-code c)
+          (assertion-violation 'get-json
+            (if (eof-object? c)
+              (format "Unexpected EOF at position ~a, expected ~a in ~a"
+                (port-position bip) expected-char expected-token)
+              (format "Unexpected character ~a at position ~a, expected ~a in ~a"
+                (integer->char c) (sub1 (port-position bip)) expected-char expected-token)))))]))
+
 (define make-null (make-parameter 'json-null))
 
 (define (parse-null bip ks kf)
   (unless (eq? |char n| (lookahead-u8 bip)) (kf))
   (get-u8 bip)
-  (let ([c (get-u8 bip)])
-    (unless (eq? |char u| c)
-      (assertion-violation 'get-json
-        (format "Unexpected character ~a at position ~a, expected u in null"
-          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
-  (let ([c (get-u8 bip)])
-    (unless (eq? |char l| c)
-      (assertion-violation 'get-json
-        (format "Unexpected character ~a at position ~a, expected l in null"
-          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
-  (let ([c (get-u8 bip)])
-    (unless (eq? |char l| c)
-      (assertion-violation 'get-json
-        (format "Unexpected character ~a at position ~a, expected l in null"
-          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
+  (check-next-token-character bip |char u| #\u "null")
+  (check-next-token-character bip |char l| #\l "null")
+  (check-next-token-character bip |char l| #\l "null")
   (ks (make-null)))
 
 (define make-false (make-parameter 'json-false))
 
-(define (parse-false bip)
-  (and (eq? |char f| (lookahead-u8 bip))
-       (get-u8 bip)
-       (eq? |char a| (get-u8 bip))
-       (eq? |char l| (get-u8 bip))
-       (eq? |char s| (get-u8 bip))
-       (eq? |char e| (get-u8 bip))
-       (make-false)))
+(define (parse-false bip ks kf)
+  (unless (eq? |char f| (lookahead-u8 bip)) (kf))
+  (get-u8 bip)
+  (check-next-token-character bip |char a| #\a "false")
+  (check-next-token-character bip |char l| #\l "false")
+  (check-next-token-character bip |char s| #\s "false")
+  (check-next-token-character bip |char e| #\e "false")
+  (ks (make-false)))
 
 (define make-true (make-parameter 'json-true))
 
@@ -208,7 +208,7 @@
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-string bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-empty bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-null bip ks (lambda () (kf #f)))))))
-      (parse-false bip)
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-false bip ks (lambda () (kf #f)))))))
       (parse-true bip)
       (parse-array bip)
       (parse-object bip)))
