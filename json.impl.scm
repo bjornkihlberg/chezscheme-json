@@ -17,10 +17,10 @@
 
 (define make-empty (make-parameter 'json-empty))
 
-(define (parse-empty bip)
-  (and (eof-object? (lookahead-u8 bip))
-       (get-u8 bip)
-       (make-empty)))
+(define (parse-empty bip ks kf)
+  (unless (eof-object? (lookahead-u8 bip)) (kf))
+  (get-u8 bip)
+  (ks (make-empty)))
 
 (define-syntax |char n| (identifier-syntax 110))
 (define-syntax |char u| (identifier-syntax 117))
@@ -45,13 +45,25 @@
 
 (define make-null (make-parameter 'json-null))
 
-(define (parse-null bip)
-  (and (eq? |char n| (lookahead-u8 bip))
-       (get-u8 bip)
-       (eq? |char u| (get-u8 bip))
-       (eq? |char l| (get-u8 bip))
-       (eq? |char l| (get-u8 bip))
-       (make-null)))
+(define (parse-null bip ks kf)
+  (unless (eq? |char n| (lookahead-u8 bip)) (kf))
+  (get-u8 bip)
+  (let ([c (get-u8 bip)])
+    (unless (eq? |char u| c)
+      (assertion-violation 'get-json
+        (format "Unexpected character ~a at position ~a, expected u in null"
+          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
+  (let ([c (get-u8 bip)])
+    (unless (eq? |char l| c)
+      (assertion-violation 'get-json
+        (format "Unexpected character ~a at position ~a, expected l in null"
+          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
+  (let ([c (get-u8 bip)])
+    (unless (eq? |char l| c)
+      (assertion-violation 'get-json
+        (format "Unexpected character ~a at position ~a, expected l in null"
+          (if (eof-object? c) c (integer->char c)) (port-position bip)))))
+  (ks (make-null)))
 
 (define make-false (make-parameter 'json-false))
 
@@ -194,8 +206,8 @@
   (parse-padding* bip)
   (or (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-number bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-string bip ks (lambda () (kf #f)))))))
-      (parse-empty bip)
-      (parse-null bip)
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-empty bip ks (lambda () (kf #f)))))))
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-null bip ks (lambda () (kf #f)))))))
       (parse-false bip)
       (parse-true bip)
       (parse-array bip)

@@ -41,6 +41,15 @@
       (assert-with symbol=? (json:get-json bip) 'json-false)
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
+(let ([json-document "nul"])
+  (call-with-port
+    (open-bytevector-input-port (string->utf8 json-document))
+    (lambda (bip)
+      (guard (e [else (assert-with string=?
+                        (condition-message e)
+                        "Unexpected character #!eof at position 3, expected l in null")])
+        (json:get-json bip)))))
+
 (let ([json-document "123e5"])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
