@@ -86,35 +86,23 @@
   (check-next-token-character bip |char e| #\e "true")
   (ks (make-true)))
 
-(define (parse-comma bip kf)
-  (unless (eq? |char ,| (lookahead-u8 bip)) (kf))
-  (get-u8 bip)
-  (void))
+(define (parse-comma bip)
+  (and (eq? |char ,| (lookahead-u8 bip)) (get-u8 bip) #t))
 
-(define (parse-array-start bip kf)
-  (unless (eq? |char [| (lookahead-u8 bip)) (kf))
-  (get-u8 bip)
-  (void))
+(define (parse-array-start bip)
+  (and (eq? |char [| (lookahead-u8 bip)) (get-u8 bip) #t))
 
-(define (parse-array-end bip kf)
-  (unless (eq? |char ]| (lookahead-u8 bip)) (kf))
-  (get-u8 bip)
-  (void))
+(define (parse-array-end bip)
+  (and (eq? |char ]| (lookahead-u8 bip)) (get-u8 bip) #t))
 
 (define (parse-object-start bip)
-  (and (eq? |char {| (lookahead-u8 bip))
-       (get-u8 bip)
-       #t))
+  (and (eq? |char {| (lookahead-u8 bip)) (get-u8 bip) #t))
 
 (define (parse-object-end bip)
-  (and (eq? |char }| (lookahead-u8 bip))
-       (get-u8 bip)
-       #t))
+  (and (eq? |char }| (lookahead-u8 bip)) (get-u8 bip) #t))
 
 (define (parse-colon bip)
-  (and (eq? |char :| (lookahead-u8 bip))
-       (get-u8 bip)
-       #t))
+  (and (eq? |char :| (lookahead-u8 bip)) (get-u8 bip) #t))
 
 (define (parse-padding* bip)
   (define (parse-padding bip)
@@ -158,16 +146,18 @@
     (vector-set! v i (car items))))))
 
 (define (parse-array bip ks kf)
-  (parse-array-start bip kf)
+  (unless (parse-array-start bip) (kf))
   (let ([x (parse-json-term bip)])
     (unless x
-      (parse-array-end bip (lambda () (assertion-violation 'get-json (format "Expected ] at position ~a" (port-position bip)))))
+      (unless (parse-array-end bip)
+        (assertion-violation 'get-json (format "Expected ] at position ~a" (port-position bip))))
       (ks ((make-array) '())))
 
     (let loop ([xs (list x)])
       (parse-padding* bip)
-      (unless (call/1cc (lambda (kf) (parse-comma bip (lambda () (kf #f)))))
-        (parse-array-end bip (lambda () (assertion-violation 'get-json (format "Expected ] at position ~a" (port-position bip)))))
+      (unless (parse-comma bip)
+        (unless (parse-array-end bip)
+          (assertion-violation 'get-json (format "Expected ] at position ~a" (port-position bip))))
         (ks ((make-array) xs)))
 
       (let ([x (parse-json-term bip)]) (and x (loop (cons x xs)))))))
@@ -179,30 +169,32 @@
       ((zero? i) v)
     (vector-set! v i (car items))))))
 
-(define (parse-object bip)
-  (define (parse-key-value-pair bip)
-    (call/1cc (lambda (k)
-      (let ([key (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-string bip ks (lambda () (kf #f)))))))])
-        (unless key (k #f))
-        (parse-padding* bip)
-        (unless (parse-colon bip) (k #f))
-        (parse-padding* bip)
-        (let ([value (parse-json-term bip)])
-          (and value (cons key value)))))))
+(define (parse-key-value-pair bip ks kf)
+  (let ([key (call/1cc (lambda (ks) (parse-string bip ks kf)))])
+    (parse-padding* bip)
+    (unless (parse-colon bip)
+      (assertion-violation 'get-json (format "Expected : at position ~a" (port-position bip))))
+    (parse-padding* bip)
+    (let ([value (parse-json-term bip)])
+      (and value (ks (cons key value))))))
 
-  (let ([result (call/1cc (lambda (return)
-                  (and (parse-object-start bip)
-                       (let loop ([result '()])
-                         (parse-padding* bip)
-                         (let ([k/v (parse-key-value-pair bip)])
-                           (parse-padding* bip)
-                           (cond
-                             [(parse-object-end bip)
-                                (if k/v (cons k/v result) result)]
-                             [(and k/v (call/1cc (lambda (kf) (parse-comma bip (lambda () (kf #f))))))
-                                (loop (cons k/v result))]
-                             [else (return #f)]))))))])
-    (and result ((make-object) result))))
+(define (parse-object bip ks kf)
+  (unless (parse-object-start bip) (kf))
+  (let ([k/v (call/1cc (lambda (ks) (call/1cc (lambda (kf) (parse-key-value-pair bip ks (lambda () (kf #f)))))))])
+    (unless k/v
+      (unless (parse-object-end bip)
+        (assertion-violation 'get-json (format "Expected } or json term at position ~a" (port-position bip))))
+      (ks ((make-object) '())))
+
+    (let loop ([k/vs (list k/v)])
+      (parse-padding* bip)
+      (unless (parse-comma bip)
+        (unless (parse-object-end bip)
+          (assertion-violation 'get-json (format "Expected } or , at position ~a" (port-position bip))))
+        (ks ((make-object) k/vs)))
+
+      (let ([k/v (call/1cc (lambda (ks) (call/1cc (lambda (kf) (parse-key-value-pair bip ks (lambda () (kf #f)))))))])
+        (and k/v (loop (cons k/v k/vs)))))))
 
 (define (parse-json-term bip)
   (parse-padding* bip)
@@ -213,7 +205,7 @@
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-false bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-true bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-array bip ks (lambda () (kf #f)))))))
-      (parse-object bip)))
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-object bip ks (lambda () (kf #f)))))))))
 
 (define get-json parse-json-term)
 
