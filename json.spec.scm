@@ -200,6 +200,15 @@
                           '#(json-object ("hey" . #(json-object))))
       (assert-with symbol=? (json:get-json bip) 'json-empty))))
 
+(let ([json-document "{\"hey\":44,}"])
+  (call-with-port
+    (open-bytevector-input-port (string->utf8 json-document))
+    (lambda (bip)
+      (guard (e [else (assert-with string=?
+                        (condition-message e)
+                        "Expected key/value-pair at position 10")])
+        (json:get-json bip)))))
+
 (let ([json-document "{\"hey\":{}{}}"])
   (call-with-port
     (open-bytevector-input-port (string->utf8 json-document))
