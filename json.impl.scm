@@ -1,37 +1,3 @@
-; (string->utf8 ",:")
-
-; (tokenize (open-bytevector-input-port (string->utf8 "  ")))
-
-(define (get-token bip)
-  (let loop ()
-    (let ([c (lookahead-u8 bip)])
-      (cond
-        [(or (eq? c 32) (eq? c 10) (eq? c 9)) ; \#space \#newline #\tab
-          (get-u8 bip) (loop)]
-
-        [(eq? c 123) ; \#{
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'lbrace p))]
-
-        [(eq? c 125) ; \#}
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'rbrace p))]
-
-        [(eq? c 91) ; \#[
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'lbrack p))]
-
-        [(eq? c 93) ; \#]
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'rbrack p))]
-
-        [(eq? c 44) ; \#,
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'comma p))]
-
-        [(eq? c 58) ; \#:
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'colon p))]
-
-        [(eof-object? c)
-          (let ([p (port-position bip)]) (get-u8 bip) (values 'empty p))]
-
-        [else (assertion-violationf 'tokenize "Unknown token at position ~a" (port-position bip))]))))
-
 (define (json-array? x)
   (and (vector? x)
        (positive? (vector-length x))
@@ -67,6 +33,12 @@
 (define-syntax |char r| (identifier-syntax 114))
 (define-syntax |char ,| (identifier-syntax 44))
 (define-syntax |char :| (identifier-syntax 58))
+(define-syntax |char [| (identifier-syntax 91))
+(define-syntax |char ]| (identifier-syntax 93))
+(define-syntax |char {| (identifier-syntax 123))
+(define-syntax |char }| (identifier-syntax 125))
+(define-syntax |char "| (identifier-syntax 34))
+(define-syntax |char \| (identifier-syntax 92))
 (define-syntax |char newline| (identifier-syntax 10))
 (define-syntax |char return| (identifier-syntax 13))
 (define-syntax |char space| (identifier-syntax 32))
@@ -108,22 +80,22 @@
        #t))
 
 (define (parse-array-start bip)
-  (and (eq? 91 (lookahead-u8 bip))
+  (and (eq? |char [| (lookahead-u8 bip))
        (get-u8 bip)
        #t))
 
 (define (parse-array-end bip)
-  (and (eq? 93 (lookahead-u8 bip))
+  (and (eq? |char ]| (lookahead-u8 bip))
        (get-u8 bip)
        #t))
 
 (define (parse-object-start bip)
-  (and (eq? 123 (lookahead-u8 bip))
+  (and (eq? |char {| (lookahead-u8 bip))
        (get-u8 bip)
        #t))
 
 (define (parse-object-end bip)
-  (and (eq? 125 (lookahead-u8 bip))
+  (and (eq? |char }| (lookahead-u8 bip))
        (get-u8 bip)
        #t))
 
@@ -144,8 +116,8 @@
   (let loop () (and (parse-padding bip) (loop))))
 
 (define (parse-string bip)
-  (and (eq? 34 (lookahead-u8 bip))
-       (eq? 34 (get-u8 bip))
+  (and (eq? |char "| (lookahead-u8 bip))
+       (get-u8 bip)
        (call/1cc
          (lambda (k)
            (utf8->string
@@ -154,9 +126,9 @@
                  (let loop ([escaped #f])
                    (let ([x (get-u8 bip)])
                      (cond
-                       [(and (eq? 92 x) (not escaped)) (put-u8 bop x) (loop #t)]
-                       [(eq? 10 x) (k #f)]
-                       [(and (eq? 34 x) (not escaped))]
+                       [(and (eq? |char \| x) (not escaped)) (put-u8 bop x) (loop #t)]
+                       [(eq? |char newline| x) (k #f)]
+                       [(and (eq? |char "| x) (not escaped))]
                        [else (put-u8 bop x) (loop #f)]))))))))))
 
 (define (parse-number bip ks kf)

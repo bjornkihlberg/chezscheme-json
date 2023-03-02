@@ -1,4 +1,4 @@
-(module json (get-json json->string get-token)
+(module json (get-json json->string)
   (include "json.impl.scm"))
 
 (import (prefix json json:))
@@ -32,30 +32,6 @@
       json-object?
       json->string
       get-json)))
-
-(let ([json-document ""])
-  (call-with-port
-    (open-bytevector-input-port (string->utf8 json-document))
-    (lambda (bip)
-      (let-values ([(token position) (json:get-token bip)])
-        (assert-with = position 0)
-        (assert-with symbol=? token 'empty)))))
-
-(let ([json-document " {  } "])
-  (call-with-port
-    (open-bytevector-input-port (string->utf8 json-document))
-    (lambda (bip)
-      (let*-values ([(token0 position0) (json:get-token bip)]
-                    [(token1 position1) (json:get-token bip)]
-                    [(token2 position2) (json:get-token bip)])
-        (assert-with = position0 1)
-        (assert-with symbol=? token0 'lbrace)
-
-        (assert-with = position1 4)
-        (assert-with symbol=? token1 'rbrace)
-
-        (assert-with = position2 6)
-        (assert-with symbol=? token2 'empty)))))
 
 (let ([json-document "5 false"])
   (call-with-port
