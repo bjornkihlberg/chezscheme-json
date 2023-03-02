@@ -78,13 +78,13 @@
 
 (define make-true (make-parameter 'json-true))
 
-(define (parse-true bip)
-  (and (eq? |char t| (lookahead-u8 bip))
-       (get-u8 bip)
-       (eq? |char r| (get-u8 bip))
-       (eq? |char u| (get-u8 bip))
-       (eq? |char e| (get-u8 bip))
-       (make-true)))
+(define (parse-true bip ks kf)
+  (unless (eq? |char t| (lookahead-u8 bip)) (kf))
+  (get-u8 bip)
+  (check-next-token-character bip |char r| #\r "true")
+  (check-next-token-character bip |char u| #\u "true")
+  (check-next-token-character bip |char e| #\e "true")
+  (ks (make-true)))
 
 (define (parse-comma bip)
   (and (eq? |char ,| (lookahead-u8 bip))
@@ -209,7 +209,7 @@
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-empty bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-null bip ks (lambda () (kf #f)))))))
       (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-false bip ks (lambda () (kf #f)))))))
-      (parse-true bip)
+      (call/1cc (lambda (kf) (call/1cc (lambda (ks) (parse-true bip ks (lambda () (kf #f)))))))
       (parse-array bip)
       (parse-object bip)))
 
