@@ -2,7 +2,7 @@
 
 (library (json)
   (export
-    get-json-string)
+    try-get-json-string-token)
 
   (import (chezscheme))
 
@@ -30,12 +30,13 @@
               [else (assertion-violationf 'get-json-string-content-token "Unexpected character ~a in escape token" x)]))]
         [else (get-u8 bip) (string x)])))
 
-  (define (get-json-string bip)
-    (let ([x (integer->char (lookahead-u8 bip))])
-      (case x
-        [#\"
-          (get-u8 bip)
-          (call-with-string-output-port (lambda (top)
-            (do () ((eq? (integer->char (lookahead-u8 bip)) #\") (get-u8 bip))
-              (put-string top (get-json-string-content-token bip)))))]
-        [else #f]))))
+  (define (try-get-json-string-token bip)
+    (let ([x (lookahead-u8 bip)])
+      (if (eof-object? x) #f
+          (case (integer->char x)
+            [#\"
+              (get-u8 bip)
+              (call-with-string-output-port (lambda (top)
+                (do () ((eq? (integer->char (lookahead-u8 bip)) #\") (get-u8 bip))
+                  (put-string top (get-json-string-content-token bip)))))]
+            [else #f])))))
